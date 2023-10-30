@@ -1,5 +1,4 @@
 import asyncio
-import pprint
 import re
 import time
 import traceback
@@ -8,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from flask import render_template_string
-from jinja2 import FileSystemLoader
 from markupsafe import Markup
 
 from fire_starter import FireStarter

@@ -1,10 +1,14 @@
 import importlib
 import inspect
+import pprint
 import secrets
-from functools import wraps
-from pathlib import Path
+from pathlib import Path, PurePath
 from pydoc import locate
 from typing import Any
+from functools import wraps, partial
+
+from jinja2 import FileSystemLoader
+from packages.micro import micro_render
 
 
 def to_class(path: str) -> Any:
@@ -20,10 +24,9 @@ def to_class(path: str) -> Any:
         class_instance = None
     return class_instance or None
 
-
 def path_processor(path):
     path = path.replace("pages.", "/").replace(".", "/").replace("index/", "").replace(
-        "[", "<").replace("]", ">").replace("/index", "").replace("~", "/")
+                "[", "<").replace("]", ">").replace("/index", "").replace("~", "/")
 
     ["/" if path.rstrip(f"{path.split('.')[-1]}").rstrip("/") == "" else path.rstrip(
         f"{path.split('.')[-1]}").rstrip("/")][0].rstrip(".").replace("/.", "/")
@@ -39,7 +42,7 @@ def get_endpoint_func_post(my_module_str):
             return f"{my_module_str}.{fn.__name__}"
 
 
-class FlaskFSRouterAPI:
+class FlaskFSRouter:
     def __init__(self, app=None):
         self.possible_routes = []
         self.fqdns = []
@@ -50,29 +53,19 @@ class FlaskFSRouterAPI:
             self.init_app(self.app)
 
     def init_app(self, app):
-        for route in FlaskFSRouterAPI().routes_export():
+        app.jinja_env.enable_async = True
+        app.jinja_env.loader = FileSystemLoader([
+            "components",
+            "pages"
+        ])
+
+        for route in FlaskFSRouter().routes_export():
             page = Path(route.get('file_path'))
             path = path_processor(route.get("path"))
 
             match route.get("method").upper():
-                case "POST" | "DELETE" | "PATCH" | "GET":
+                case "POST" | "DELETE" | "PATCH":
                     file_path = route.get("file_path").replace("\\", ".").rstrip(".py")
-
-                    if "." in to_class(get_endpoint_func_post(file_path)).__endpoint_name__:
-                        blueprint_file_path = ""
-                        for part in file_path.split(".")[:-1]:
-                            blueprint_file_path += f"{part}."
-                        blueprint_file_path = blueprint_file_path.rstrip(".")
-                        blueprint_name = to_class(get_endpoint_func_post(file_path)).__endpoint_name__.split(".")[0]
-                        app.blueprints.update(
-                            {
-                                f"{blueprint_name}": type(f"{blueprint_name}", (object,), {
-                                    "name": f"{blueprint_name}",
-                                    "import_name": f"{blueprint_file_path}",
-                                })
-                            }
-                        )
-
                     app.add_url_rule(
                         path,
                         **dict(
@@ -83,11 +76,23 @@ class FlaskFSRouterAPI:
                         )
                     )
 
+                case "GET":
+                    pprint.pprint("IM FUCKING HERE")
+                    app.add_url_rule(
+                        path,
+                        **dict(
+                            view_func=partial(micro_render, app, page),
+                            endpoint=route.get('endpoint'),
+                            methods=[route.get('method')],
+                            websocket=route.get("ws")
+                        )
+                    )
+
                 case _:
                     continue
 
     def find_routes_files(self):
-        pages_path = Path('pages/api')
+        pages_path = Path('pages')
         pages_html = list(pages_path.glob('**/*.html'))
         [
             self.possible_routes.append(
@@ -100,7 +105,7 @@ class FlaskFSRouterAPI:
             self.possible_routes.append(
                 page
             )
-            for page in pages_py if page.name != "__init__.py"
+            for page in pages_py
         ]
         return self
 
