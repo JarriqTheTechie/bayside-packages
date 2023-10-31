@@ -8,7 +8,7 @@ from typing import Any
 from functools import wraps, partial
 
 from jinja2 import FileSystemLoader
-from packages.micro import micro_render
+from micro import micro_render
 
 
 def to_class(path: str) -> Any:
