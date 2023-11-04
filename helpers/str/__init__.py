@@ -1,4 +1,5 @@
 import json
+import pprint
 import re
 
 
@@ -16,6 +17,61 @@ class String:
         obj = self()
         obj.string = string
         return obj
+
+    def is_alpha(self):
+        """
+        Check if the string contains only alphabetic characters.
+        :return:
+        """
+        return self.string.isalpha()
+
+    def is_alpha_numeric(self):
+        """
+        Check if the string contains only alphanumeric characters.
+        :return:
+        """
+        return self.string.isalnum()
+
+    def is_alpha_dash(self):
+        """
+        Check if the string contains only alpha-numeric characters, dashes, and underscores.
+        :return:
+        """
+        return self.string.replace("-", "").replace("_", "").isalpha()
+
+    def is_email(self):
+        """
+        Check if the string is an email.
+        :return:
+        """
+        return self.matches_pattern(r"^[^@]+@[^@]+\.[^@]+$")
+
+    def is_ip(self):
+        """
+        Check if the string is an ip address.
+        :return:
+        """
+        return self.matches_pattern(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+
+    def is_ipv4(self):
+        """
+        Check if the string is an ipv4 address.
+        :return:
+        """
+        return self.matches_pattern(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+
+    def is_ipv6(self):
+        """
+        Check if the string is an ipv6 address.
+        :return:
+        """
+        return self.matches_pattern(r"^([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}$")
+    def is_mac_address(self):
+        """
+        Check if the string is a mac address.
+        :return:
+        """
+        return self.matches_pattern(r"^([0-9a-f]{2}:){5}[0-9a-f]{2}$")
 
     def after(self, after: str):
         """
@@ -37,10 +93,10 @@ class String:
 
     def ascii(self):
         """
-        Get the ascii value of the string.
+        Transliterate a UTF-8 value to ASCII.
         :return:
         """
-        self.string = ord(self.string)
+        self.string = str(self.string).encode("ascii", "ignore").decode("ascii")
         return self
 
     def before(self, before):
@@ -904,4 +960,9 @@ class String:
         """
         return self.string
 
-
+    def __repr__(self):
+        """
+        Return the string.
+        :return:
+        """
+        return self.string
